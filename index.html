@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="智慧城市服務平台 - 市民卡系統">
+    <meta name="theme-color" content="#1976D2">
+
+    <!-- 安全性標頭 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; img-src 'self' https: data:; style-src 'self' https: 'unsafe-inline'; script-src 'self' https: 'unsafe-inline'">
+
+    <link rel="icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- 預加載關鍵資源 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <title>市民卡系統</title>
+
+    <style>
+        :root {
+            --primary-color: #1976D2;
+            --secondary-color: #424242;
+            --success-color: #4CAF50;
+            --danger-color: #F44336;
+            --warning-color: #FFC107;
+            --info-color: #2196F3;
+        }
+
+        /* 基本樣式 */
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        /* Loading 動畫 */
+        #app-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--primary-color);
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            margin-top: 1rem;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* 離線提示 */
+        #offline-alert {
+            display: none;
+            position: fixed;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--warning-color);
+            color: #000;
+            padding: 1rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 深色模式支援 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #121212;
+                color: #ffffff;
+            }
+
+            #app-loading {
+                background-color: rgba(18, 18, 18, 0.9);
+            }
+
+            .loading-text {
+                color: #ffffff;
+            }
+        }
+
+        /* 無障礙支援 */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+<!-- Loading 提示 -->
+<div id="app-loading">
+    <div class="loading-spinner" role="status">
+        <span class="sr-only">載入中...</span>
+    </div>
+    <p class="loading-text">載入中...</p>
+</div>
+
+<!-- 離線提示 -->
+<div id="offline-alert" role="alert">
+    <i class="fas fa-wifi-slash"></i>
+    您目前處於離線狀態，部分功能可能無法使用
+</div>
+
+<!-- Vue 應用掛載點 -->
+<div id="app"></div>
+
+<!-- Bootstrap Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 應用程式初始化 -->
+<script type="module" src="/src/main.js"></script>
+
+<!-- 錯誤處理和性能監控 -->
+<script>
+    // 全局錯誤處理
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+        console.error('Error:', {
+            message: msg,
+            url: url,
+            line: lineNo,
+            column: columnNo,
+            error: error
+        });
+        return false;
+    };
+
+    // 未處理的 Promise 錯誤
+    window.addEventListener('unhandledrejection', function(event) {
+        console.error('Unhandled promise rejection:', event.reason);
+    });
+
+    // 效能監控
+    if ('performance' in window) {
+        window.addEventListener('load', function() {
+            const timing = performance.timing;
+            const loadTime = timing.loadEventEnd - timing.navigationStart;
+            console.log('Page load time:', loadTime + 'ms');
+        });
+    }
+
+    // 移除 Loading
+    window.addEventListener('load', function() {
+        const loading = document.getElementById('app-loading');
+        if (loading) {
+            loading.style.opacity = '0';
+            loading.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => loading.style.display = 'none', 300);
+        }
+    });
+
+    // 網路狀態監控
+    function updateOnlineStatus() {
+        const offlineAlert = document.getElementById('offline-alert');
+        if (!navigator.onLine) {
+            offlineAlert.style.display = 'block';
+        } else {
+            offlineAlert.style.display = 'none';
+        }
+    }
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    // PWA 支援
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', async () => {
+            try {
+                const registration = await navigator.serviceWorker.register('/service-worker.js');
+                console.log('ServiceWorker registered:', registration);
+            } catch (error) {
+                console.error('ServiceWorker registration failed:', error);
+            }
+        });
+    }
+</script>
+</body>
+</html>

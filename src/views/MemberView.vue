@@ -377,7 +377,6 @@ export default {
   }
 }
 </script>
-
 <style scoped>
 .member-view {
   padding: var(--spacing-lg);
@@ -480,6 +479,40 @@ export default {
   color: var(--text-secondary);
 }
 
+.transaction-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.transaction-time {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.discount-info {
+  margin-bottom: var(--spacing-sm);
+}
+
+.expiry {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
 @media (max-width: 768px) {
   .member-header {
-    flex-direction: column
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .member-functions {
+    grid-template-columns: 1fr;
+  }
+
+  .transaction-info {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    align-items: flex-start;
+  }
+}
+</style>
