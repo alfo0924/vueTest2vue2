@@ -1,4 +1,4 @@
-import request from './axios.config'
+import request from './api/axios.config'
 
 class BookingService {
     /**

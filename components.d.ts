@@ -18,6 +18,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SeatSelector: typeof import('./src/components/booking/SeatSelector.vue')['default']
+    TopUpForm: typeof import('./src/components/wallet/TopUpForm.vue')['default']
     TransactionList: typeof import('./src/components/wallet/TransactionList.vue')['default']
     WalletBalance: typeof import('./src/components/wallet/WalletBalance.vue')['default']
   }
