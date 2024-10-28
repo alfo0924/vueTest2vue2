@@ -1,3 +1,5 @@
+// src/stores/wallet.js
+import { defineStore } from 'pinia'
 import walletService from '@/services/walletService'
 
 export const useWalletStore = defineStore('wallet', {
@@ -7,7 +9,9 @@ export const useWalletStore = defineStore('wallet', {
             walletId: null,
             balance: 0,
             cardNumber: '',
-            cardType: ''
+            cardType: '',
+            memberId: null,
+            lastUpdateTime: null
         },
 
         // 交易記錄
@@ -18,6 +22,17 @@ export const useWalletStore = defineStore('wallet', {
             page: 1,
             limit: 10,
             total: 0
+        },
+
+        // 篩選條件
+        filters: {
+            type: null, // '充值', '支付', '退款'
+            startDate: null,
+            endDate: null,
+            minAmount: null,
+            maxAmount: null,
+            sortBy: 'transactionTime', // 'transactionTime', 'amount'
+            sortOrder: 'desc' // 'asc', 'desc'
         },
 
         // 載入狀態
@@ -34,7 +49,8 @@ export const useWalletStore = defineStore('wallet', {
         // 取得卡片資訊
         cardInfo: (state) => ({
             cardNumber: state.walletInfo.cardNumber,
-            cardType: state.walletInfo.cardType
+            cardType: state.walletInfo.cardType,
+            memberId: state.walletInfo.memberId
         }),
 
         // 取得最近交易記錄
@@ -42,6 +58,11 @@ export const useWalletStore = defineStore('wallet', {
 
         // 取得所有交易記錄
         allTransactions: (state) => state.transactions,
+
+        // 依類型分類的交易記錄
+        transactionsByType: (state) => (type) => {
+            return state.transactions.filter(t => t.type === type)
+        },
 
         // 計算收入總額
         totalIncome: (state) => {
@@ -55,6 +76,47 @@ export const useWalletStore = defineStore('wallet', {
             return state.transactions
                 .filter(t => t.type === '支付')
                 .reduce((sum, t) => sum + t.amount, 0)
+        },
+
+        // 取得篩選後的交易記錄
+        filteredTransactions: (state) => {
+            let filtered = [...state.transactions]
+
+            // 依類型篩選
+            if (state.filters.type) {
+                filtered = filtered.filter(t => t.type === state.filters.type)
+            }
+
+            // 依日期範圍篩選
+            if (state.filters.startDate) {
+                filtered = filtered.filter(t =>
+                    new Date(t.transactionTime) >= new Date(state.filters.startDate)
+                )
+            }
+            if (state.filters.endDate) {
+                filtered = filtered.filter(t =>
+                    new Date(t.transactionTime) <= new Date(state.filters.endDate)
+                )
+            }
+
+            // 依金額範圍篩選
+            if (state.filters.minAmount !== null) {
+                filtered = filtered.filter(t => t.amount >= state.filters.minAmount)
+            }
+            if (state.filters.maxAmount !== null) {
+                filtered = filtered.filter(t => t.amount <= state.filters.maxAmount)
+            }
+
+            // 排序
+            filtered.sort((a, b) => {
+                const order = state.filters.sortOrder === 'asc' ? 1 : -1
+                if (state.filters.sortBy === 'transactionTime') {
+                    return order * (new Date(b.transactionTime) - new Date(a.transactionTime))
+                }
+                return order * (b.amount - a.amount)
+            })
+
+            return filtered
         },
 
         // 檢查是否正在載入
@@ -71,7 +133,10 @@ export const useWalletStore = defineStore('wallet', {
                 this.loading = true
                 this.error = null
                 const response = await walletService.getWalletInfo()
-                this.walletInfo = response
+                this.walletInfo = {
+                    ...response,
+                    lastUpdateTime: new Date().toISOString()
+                }
             } catch (error) {
                 this.error = error.message
                 throw error
@@ -102,6 +167,13 @@ export const useWalletStore = defineStore('wallet', {
             try {
                 this.loading = true
                 this.error = null
+
+                // 檢查餘額
+                const hasEnoughBalance = await this.checkBalance(paymentData.amount)
+                if (!hasEnoughBalance) {
+                    throw new Error('餘額不足')
+                }
+
                 const response = await walletService.pay(paymentData)
                 await this.fetchWalletInfo()
                 await this.fetchTransactions()
@@ -122,6 +194,7 @@ export const useWalletStore = defineStore('wallet', {
                 const response = await walletService.getTransactions({
                     page: this.pagination.page,
                     limit: this.pagination.limit,
+                    ...this.filters,
                     ...params
                 })
                 this.transactions = response.transactions
@@ -138,7 +211,7 @@ export const useWalletStore = defineStore('wallet', {
         async checkBalance(amount) {
             try {
                 const response = await walletService.checkBalance(amount)
-                return response
+                return response.isEnough
             } catch (error) {
                 this.error = error.message
                 throw error
@@ -160,6 +233,26 @@ export const useWalletStore = defineStore('wallet', {
             } finally {
                 this.loading = false
             }
+        },
+
+        // 設置篩選條件
+        setFilters(filters) {
+            this.filters = { ...this.filters, ...filters }
+            this.pagination.page = 1 // 重置分頁
+        },
+
+        // 重置篩選條件
+        resetFilters() {
+            this.filters = {
+                type: null,
+                startDate: null,
+                endDate: null,
+                minAmount: null,
+                maxAmount: null,
+                sortBy: 'transactionTime',
+                sortOrder: 'desc'
+            }
+            this.pagination.page = 1
         },
 
         // 設置分頁
