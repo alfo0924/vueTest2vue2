@@ -1,14 +1,16 @@
-import api from './api'
+// src/services/walletService.js
+import api from './api/axios.config'
+import { handleApiError } from '@/utils/errorHandler'
 
 class WalletService {
     /**
      * 獲取錢包資訊
-     * @returns {Promise} 錢包資訊
+     * @returns {Promise<Object>} 錢包資訊
      */
     async getWalletInfo() {
         try {
-            const response = await api.walletAPI.getWalletInfo()
-            return this.formatWalletInfo(response)
+            const response = await api.get('/wallet/info')
+            return this.formatWalletInfo(response.data)
         } catch (error) {
             throw this.handleError(error, '獲取錢包資訊失敗')
         }
@@ -17,15 +19,13 @@ class WalletService {
     /**
      * 儲值
      * @param {number} amount - 儲值金額
-     * @returns {Promise} 儲值結果
+     * @returns {Promise<Object>} 儲值結果
      */
     async topUp(amount) {
         try {
-            if (!this.validateAmount(amount)) {
-                throw new Error('無效的儲值金額')
-            }
-            const response = await api.walletAPI.topUp({ amount })
-            return response
+            this.validateAmount(amount)
+            const response = await api.post('/wallet/topup', { amount })
+            return this.formatTransaction(response.data)
         } catch (error) {
             throw this.handleError(error, '儲值失敗')
         }
@@ -34,15 +34,16 @@ class WalletService {
     /**
      * 支付
      * @param {Object} paymentData - 支付資料
-     * @returns {Promise} 支付結果
+     * @param {number} paymentData.amount - 支付金額
+     * @param {string} paymentData.purpose - 支付用途
+     * @param {string} paymentData.orderId - 訂單編號
+     * @returns {Promise<Object>} 支付結果
      */
     async pay(paymentData) {
         try {
-            if (!this.validatePaymentData(paymentData)) {
-                throw new Error('無效的支付資料')
-            }
-            const response = await api.walletAPI.pay(paymentData)
-            return response
+            this.validatePaymentData(paymentData)
+            const response = await api.post('/wallet/pay', paymentData)
+            return this.formatTransaction(response.data)
         } catch (error) {
             throw this.handleError(error, '支付失敗')
         }
@@ -51,12 +52,20 @@ class WalletService {
     /**
      * 獲取交易記錄
      * @param {Object} params - 查詢參數
-     * @returns {Promise} 交易記錄列表
+     * @param {number} params.page - 頁碼
+     * @param {number} params.limit - 每頁筆數
+     * @param {string} params.type - 交易類型
+     * @param {string} params.startDate - 開始日期
+     * @param {string} params.endDate - 結束日期
+     * @returns {Promise<Object>} 交易記錄列表和分頁資訊
      */
     async getTransactions(params = {}) {
         try {
-            const response = await api.walletAPI.getTransactions(params)
-            return response.map(this.formatTransaction)
+            const response = await api.get('/wallet/transactions', { params })
+            return {
+                transactions: response.data.transactions.map(this.formatTransaction),
+                pagination: response.data.pagination
+            }
         } catch (error) {
             throw this.handleError(error, '獲取交易記錄失敗')
         }
@@ -65,12 +74,12 @@ class WalletService {
     /**
      * 獲取特定交易詳情
      * @param {string} transactionId - 交易ID
-     * @returns {Promise} 交易詳情
+     * @returns {Promise<Object>} 交易詳情
      */
     async getTransactionDetails(transactionId) {
         try {
-            const response = await api.walletAPI.getTransactions({ transactionId })
-            return this.formatTransaction(response)
+            const response = await api.get(`/wallet/transactions/${transactionId}`)
+            return this.formatTransaction(response.data)
         } catch (error) {
             throw this.handleError(error, '獲取交易詳情失敗')
         }
@@ -83,8 +92,8 @@ class WalletService {
      */
     async checkBalance(amount) {
         try {
-            const walletInfo = await this.getWalletInfo()
-            return walletInfo.balance >= amount
+            const response = await api.post('/wallet/check-balance', { amount })
+            return response.data.isEnough
         } catch (error) {
             throw this.handleError(error, '檢查餘額失敗')
         }
@@ -93,15 +102,16 @@ class WalletService {
     /**
      * 退款
      * @param {Object} refundData - 退款資料
-     * @returns {Promise} 退款結果
+     * @param {string} refundData.transactionId - 原交易ID
+     * @param {number} refundData.amount - 退款金額
+     * @param {string} refundData.reason - 退款原因
+     * @returns {Promise<Object>} 退款結果
      */
     async refund(refundData) {
         try {
-            if (!this.validateRefundData(refundData)) {
-                throw new Error('無效的退款資料')
-            }
-            const response = await api.walletAPI.refund(refundData)
-            return response
+            this.validateRefundData(refundData)
+            const response = await api.post('/wallet/refund', refundData)
+            return this.formatTransaction(response.data)
         } catch (error) {
             throw this.handleError(error, '退款失敗')
         }
@@ -110,38 +120,54 @@ class WalletService {
     /**
      * 驗證金額
      * @param {number} amount - 金額
-     * @returns {boolean} 驗證結果
+     * @throws {Error} 驗證失敗時拋出錯誤
      */
     validateAmount(amount) {
-        return amount && amount > 0 && amount <= 10000
+        if (!amount || typeof amount !== 'number') {
+            throw new Error('金額必須為數字')
+        }
+        if (amount <= 0) {
+            throw new Error('金額必須大於0')
+        }
+        if (amount > 10000) {
+            throw new Error('單次金額不能超過10,000元')
+        }
     }
 
     /**
      * 驗證支付資料
      * @param {Object} paymentData - 支付資料
-     * @returns {boolean} 驗證結果
+     * @throws {Error} 驗證失敗時拋出錯誤
      */
     validatePaymentData(paymentData) {
-        return (
-            paymentData &&
-            paymentData.amount &&
-            this.validateAmount(paymentData.amount) &&
-            paymentData.purpose
-        )
+        if (!paymentData || typeof paymentData !== 'object') {
+            throw new Error('無效的支付資料')
+        }
+        this.validateAmount(paymentData.amount)
+        if (!paymentData.purpose) {
+            throw new Error('請指定支付用途')
+        }
+        if (!paymentData.orderId) {
+            throw new Error('請提供訂單編號')
+        }
     }
 
     /**
      * 驗證退款資料
      * @param {Object} refundData - 退款資料
-     * @returns {boolean} 驗證結果
+     * @throws {Error} 驗證失敗時拋出錯誤
      */
     validateRefundData(refundData) {
-        return (
-            refundData &&
-            refundData.transactionId &&
-            refundData.amount &&
-            this.validateAmount(refundData.amount)
-        )
+        if (!refundData || typeof refundData !== 'object') {
+            throw new Error('無效的退款資料')
+        }
+        if (!refundData.transactionId) {
+            throw new Error('請提供原交易編號')
+        }
+        this.validateAmount(refundData.amount)
+        if (!refundData.reason) {
+            throw new Error('請提供退款原因')
+        }
     }
 
     /**
@@ -151,11 +177,14 @@ class WalletService {
      */
     formatWalletInfo(data) {
         return {
-            walletId: data.WalletID,
-            balance: data.Balance,
-            cardNumber: data.CardNumber,
-            cardType: data.CardType,
-            lastUpdated: new Date(data.LastUpdated)
+            walletId: data.wallet_id,
+            memberId: data.member_id,
+            balance: Number(data.balance),
+            cardNumber: data.card_number,
+            cardType: data.card_type,
+            lastUpdated: new Date(data.last_updated),
+            status: data.status,
+            isActive: data.is_active
         }
     }
 
@@ -166,13 +195,15 @@ class WalletService {
      */
     formatTransaction(transaction) {
         return {
-            transactionId: transaction.TransactionID,
-            type: transaction.TransactionType,
-            amount: transaction.Amount,
-            balance: transaction.Balance,
-            description: transaction.Description,
-            status: transaction.Status,
-            createdAt: new Date(transaction.TransactionTime)
+            transactionId: transaction.transaction_id,
+            type: transaction.type,
+            amount: Number(transaction.amount),
+            balance: Number(transaction.balance),
+            description: transaction.description,
+            status: transaction.status,
+            orderId: transaction.order_id,
+            createdAt: new Date(transaction.created_at),
+            updatedAt: transaction.updated_at ? new Date(transaction.updated_at) : null
         }
     }
 
@@ -183,32 +214,7 @@ class WalletService {
      * @returns {Error} 處理後的錯誤
      */
     handleError(error, defaultMessage) {
-        console.error('WalletService Error:', error)
-
-        if (error.response) {
-            switch (error.response.status) {
-                case 400:
-                    return new Error('請求參數錯誤')
-                case 401:
-                    return new Error('請重新登入')
-                case 403:
-                    return new Error('權限不足')
-                case 404:
-                    return new Error('資源不存在')
-                case 409:
-                    return new Error('餘額不足')
-                case 500:
-                    return new Error('系統錯誤，請稍後再試')
-                default:
-                    return new Error(defaultMessage)
-            }
-        }
-
-        if (error.request) {
-            return new Error('網路連線錯誤，請檢查網路狀態')
-        }
-
-        return new Error(defaultMessage)
+        return handleApiError(error, defaultMessage)
     }
 }
 

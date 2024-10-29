@@ -1,190 +1,209 @@
+// src/services/api.js
+
 import request from './api/axios.config'
 
 // 會員相關 API
 export const memberAPI = {
     // 註冊
-    register: (data) => {
-        return request.post('/members/register', data)
-    },
+    register: (data) => request.post('/members/register', data),
 
     // 登入
-    login: (data) => {
-        return request.post('/members/login', data)
-    },
+    login: (data) => request.post('/members/login', data),
+
+    // 登出
+    logout: () => request.post('/members/logout'),
 
     // 獲取會員資料
-    getMemberInfo: () => {
-        return request.get('/members/info')
-    },
+    getMemberInfo: () => request.get('/members/info'),
 
     // 更新會員資料
-    updateMemberInfo: (data) => {
-        return request.put('/members/info', data)
-    }
+    updateMemberInfo: (data) => request.put('/members/info', data),
+
+    // 更改密碼
+    changePassword: (data) => request.put('/members/password', data),
+
+    // 重設密碼
+    resetPassword: (email) => request.post('/members/reset-password', { email }),
+
+    // 驗證 Email
+    verifyEmail: (token) => request.post(`/members/verify-email/${token}`),
+
+    // 獲取會員卡資訊
+    getCardInfo: () => request.get('/members/card')
 }
 
 // 電影相關 API
 export const movieAPI = {
     // 獲取電影列表
-    getMovies: (params) => {
-        return request.get('/movies', { params })
-    },
+    getMovies: (params) => request.get('/movies', { params }),
 
     // 獲取電影詳情
-    getMovieById: (id) => {
-        return request.get(`/movies/${id}`)
-    },
+    getMovieById: (id) => request.get(`/movies/${id}`),
 
     // 獲取電影類別
-    getCategories: () => {
-        return request.get('/movies/categories')
-    },
+    getCategories: () => request.get('/movies/categories'),
 
     // 獲取場次列表
-    getShowings: (movieId) => {
-        return request.get(`/movies/${movieId}/showings`)
-    },
+    getShowings: (movieId, params) => request.get(`/movies/${movieId}/showings`, { params }),
 
     // 獲取場次詳情
-    getShowingById: (showingId) => {
-        return request.get(`/showings/${showingId}`)
-    }
+    getShowingById: (showingId) => request.get(`/showings/${showingId}`),
+
+    // 搜尋電影
+    searchMovies: (keyword) => request.get('/movies/search', { params: { keyword } }),
+
+    // 獲取推薦電影
+    getRecommendations: () => request.get('/movies/recommendations')
 }
 
 // 訂票相關 API
 export const bookingAPI = {
     // 創建訂票
-    createBooking: (data) => {
-        return request.post('/bookings', data)
-    },
+    createBooking: (data) => request.post('/bookings', data),
 
     // 獲取訂票列表
-    getBookings: () => {
-        return request.get('/bookings')
-    },
+    getBookings: (params) => request.get('/bookings', { params }),
 
     // 獲取訂票詳情
-    getBookingById: (id) => {
-        return request.get(`/bookings/${id}`)
-    },
+    getBookingById: (id) => request.get(`/bookings/${id}`),
 
     // 取消訂票
-    cancelBooking: (id) => {
-        return request.put(`/bookings/${id}/cancel`)
-    },
+    cancelBooking: (id) => request.put(`/bookings/${id}/cancel`),
 
     // 獲取已佔用座位
-    getOccupiedSeats: (showingId) => {
-        return request.get(`/showings/${showingId}/seats`)
-    }
+    getOccupiedSeats: (showingId) => request.get(`/showings/${showingId}/seats`),
+
+    // 暫存座位
+    holdSeats: (showingId, seats) => request.post(`/showings/${showingId}/hold-seats`, { seats }),
+
+    // 釋放座位
+    releaseSeats: (showingId, seats) => request.post(`/showings/${showingId}/release-seats`, { seats })
 }
 
 // 電子錢包相關 API
 export const walletAPI = {
     // 獲取錢包資訊
-    getWalletInfo: () => {
-        return request.get('/wallet')
-    },
+    getWalletInfo: () => request.get('/wallet'),
 
     // 儲值
-    topUp: (data) => {
-        return request.post('/wallet/top-up', data)
-    },
+    topUp: (data) => request.post('/wallet/top-up', data),
 
     // 支付
-    pay: (data) => {
-        return request.post('/wallet/pay', data)
-    },
+    pay: (data) => request.post('/wallet/pay', data),
+
+    // 退款
+    refund: (data) => request.post('/wallet/refund', data),
 
     // 獲取交易記錄
-    getTransactions: (params) => {
-        return request.get('/wallet/transactions', { params })
-    }
+    getTransactions: (params) => request.get('/wallet/transactions', { params }),
+
+    // 檢查餘額
+    checkBalance: (amount) => request.get('/wallet/check-balance', { params: { amount } }),
+
+    // 獲取儲值方式
+    getTopUpMethods: () => request.get('/wallet/top-up-methods')
 }
 
 // 優惠相關 API
 export const discountAPI = {
     // 獲取優惠列表
-    getDiscounts: (params) => {
-        return request.get('/discounts', { params })
-    },
+    getDiscounts: (params) => request.get('/discounts', { params }),
 
     // 獲取優惠詳情
-    getDiscountById: (id) => {
-        return request.get(`/discounts/${id}`)
-    },
+    getDiscountById: (id) => request.get(`/discounts/${id}`),
 
     // 使用優惠
-    useDiscount: (id) => {
-        return request.post(`/discounts/${id}/use`)
-    },
+    useDiscount: (id, data) => request.post(`/discounts/${id}/use`, data),
 
     // 獲取已使用的優惠
-    getUsedDiscounts: () => {
-        return request.get('/discounts/used')
-    }
+    getUsedDiscounts: (params) => request.get('/discounts/used', { params }),
+
+    // 檢查優惠可用性
+    checkDiscountAvailability: (id) => request.get(`/discounts/${id}/availability`),
+
+    // 獲取會員專屬優惠
+    getMemberDiscounts: () => request.get('/discounts/member')
 }
 
 // 場地相關 API
 export const venueAPI = {
     // 獲取場地列表
-    getVenues: () => {
-        return request.get('/venues')
-    },
+    getVenues: (params) => request.get('/venues', { params }),
 
     // 獲取場地詳情
-    getVenueById: (id) => {
-        return request.get(`/venues/${id}`)
-    }
+    getVenueById: (id) => request.get(`/venues/${id}`),
+
+    // 獲取場地座位圖
+    getVenueSeatingPlan: (id) => request.get(`/venues/${id}/seating-plan`)
 }
 
 // 系統相關 API
 export const systemAPI = {
     // 獲取系統公告
-    getAnnouncements: () => {
-        return request.get('/announcements')
-    },
+    getAnnouncements: (params) => request.get('/announcements', { params }),
 
     // 獲取系統設定
-    getSettings: () => {
-        return request.get('/settings')
-    }
+    getSettings: () => request.get('/settings'),
+
+    // 獲取系統狀態
+    getSystemStatus: () => request.get('/system/status'),
+
+    // 獲取版本資訊
+    getVersion: () => request.get('/system/version')
 }
 
 // 通知相關 API
 export const notificationAPI = {
     // 獲取通知列表
-    getNotifications: () => {
-        return request.get('/notifications')
-    },
+    getNotifications: (params) => request.get('/notifications', { params }),
 
     // 標記通知為已讀
-    markAsRead: (id) => {
-        return request.put(`/notifications/${id}/read`)
-    },
+    markAsRead: (id) => request.put(`/notifications/${id}/read`),
+
+    // 標記所有通知為已讀
+    markAllAsRead: () => request.put('/notifications/read-all'),
 
     // 刪除通知
-    deleteNotification: (id) => {
-        return request.delete(`/notifications/${id}`)
-    }
+    deleteNotification: (id) => request.delete(`/notifications/${id}`),
+
+    // 清空通知
+    clearNotifications: () => request.delete('/notifications/clear'),
+
+    // 獲取未讀通知數量
+    getUnreadCount: () => request.get('/notifications/unread-count')
 }
 
 // 評價相關 API
 export const reviewAPI = {
     // 新增評價
-    createReview: (data) => {
-        return request.post('/reviews', data)
-    },
+    createReview: (data) => request.post('/reviews', data),
 
     // 獲取電影評價
-    getMovieReviews: (movieId, params) => {
-        return request.get(`/movies/${movieId}/reviews`, { params })
-    },
+    getMovieReviews: (movieId, params) => request.get(`/movies/${movieId}/reviews`, { params }),
+
+    // 更新評價
+    updateReview: (id, data) => request.put(`/reviews/${id}`, data),
 
     // 刪除評價
-    deleteReview: (id) => {
-        return request.delete(`/reviews/${id}`)
-    }
+    deleteReview: (id) => request.delete(`/reviews/${id}`),
+
+    // 點讚評價
+    likeReview: (id) => request.post(`/reviews/${id}/like`),
+
+    // 取消點讚
+    unlikeReview: (id) => request.delete(`/reviews/${id}/like`)
+}
+
+// 身份驗證相關 API
+export const verificationAPI = {
+    // 驗證身份
+    verify: (type, data) => request.post(`/verification/${type}`, data),
+
+    // 獲取驗證狀態
+    getVerificationStatus: (type) => request.get(`/verification/${type}/status`),
+
+    // 重新發送驗證碼
+    resendVerificationCode: (type) => request.post(`/verification/${type}/resend`)
 }
 
 export default {
@@ -196,5 +215,6 @@ export default {
     venueAPI,
     systemAPI,
     notificationAPI,
-    reviewAPI
+    reviewAPI,
+    verificationAPI
 }

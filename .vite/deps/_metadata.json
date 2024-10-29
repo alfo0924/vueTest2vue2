@@ -1,65 +1,65 @@
 {
   "hash": "25056d21",
-  "browserHash": "8d078711",
+  "browserHash": "99390b76",
   "optimized": {
-    "@fortawesome/fontawesome-svg-core": {
-      "src": "../../node_modules/@fortawesome/fontawesome-svg-core/index.mjs",
-      "file": "@fortawesome_fontawesome-svg-core.js",
-      "fileHash": "42b8a369",
-      "needsInterop": false
-    },
-    "@fortawesome/free-brands-svg-icons": {
-      "src": "../../node_modules/@fortawesome/free-brands-svg-icons/index.mjs",
-      "file": "@fortawesome_free-brands-svg-icons.js",
-      "fileHash": "f2bd5416",
-      "needsInterop": false
-    },
-    "@fortawesome/free-solid-svg-icons": {
-      "src": "../../node_modules/@fortawesome/free-solid-svg-icons/index.mjs",
-      "file": "@fortawesome_free-solid-svg-icons.js",
-      "fileHash": "95b967fe",
-      "needsInterop": false
-    },
-    "@fortawesome/vue-fontawesome": {
-      "src": "../../node_modules/@fortawesome/vue-fontawesome/index.es.js",
-      "file": "@fortawesome_vue-fontawesome.js",
-      "fileHash": "2fadd6a0",
-      "needsInterop": false
-    },
-    "axios": {
-      "src": "../../node_modules/axios/index.js",
-      "file": "axios.js",
-      "fileHash": "63ec2613",
-      "needsInterop": false
-    },
-    "bootstrap": {
-      "src": "../../node_modules/bootstrap/dist/js/bootstrap.esm.js",
-      "file": "bootstrap.js",
-      "fileHash": "f0f6cb3d",
+    "vue": {
+      "src": "../../node_modules/vue/dist/vue.runtime.esm-bundler.js",
+      "file": "vue.js",
+      "fileHash": "90d6d1be",
       "needsInterop": false
     },
     "pinia": {
       "src": "../../node_modules/pinia/dist/pinia.mjs",
       "file": "pinia.js",
-      "fileHash": "338655f7",
+      "fileHash": "ba416dbb",
       "needsInterop": false
     },
-    "uuid": {
-      "src": "../../node_modules/uuid/dist/esm-browser/index.js",
-      "file": "uuid.js",
-      "fileHash": "4db43977",
+    "bootstrap": {
+      "src": "../../node_modules/bootstrap/dist/js/bootstrap.esm.js",
+      "file": "bootstrap.js",
+      "fileHash": "864cf76d",
       "needsInterop": false
     },
-    "vue": {
-      "src": "../../node_modules/vue/dist/vue.runtime.esm-bundler.js",
-      "file": "vue.js",
-      "fileHash": "da63ae9f",
+    "@fortawesome/fontawesome-svg-core": {
+      "src": "../../node_modules/@fortawesome/fontawesome-svg-core/index.mjs",
+      "file": "@fortawesome_fontawesome-svg-core.js",
+      "fileHash": "6f13734a",
+      "needsInterop": false
+    },
+    "@fortawesome/vue-fontawesome": {
+      "src": "../../node_modules/@fortawesome/vue-fontawesome/index.es.js",
+      "file": "@fortawesome_vue-fontawesome.js",
+      "fileHash": "c12ce73a",
+      "needsInterop": false
+    },
+    "@fortawesome/free-solid-svg-icons": {
+      "src": "../../node_modules/@fortawesome/free-solid-svg-icons/index.mjs",
+      "file": "@fortawesome_free-solid-svg-icons.js",
+      "fileHash": "ed151e01",
+      "needsInterop": false
+    },
+    "@fortawesome/free-brands-svg-icons": {
+      "src": "../../node_modules/@fortawesome/free-brands-svg-icons/index.mjs",
+      "file": "@fortawesome_free-brands-svg-icons.js",
+      "fileHash": "36b9d0e4",
       "needsInterop": false
     },
     "vue-router": {
       "src": "../../node_modules/vue-router/dist/vue-router.mjs",
       "file": "vue-router.js",
-      "fileHash": "30e40a77",
+      "fileHash": "21254286",
+      "needsInterop": false
+    },
+    "uuid": {
+      "src": "../../node_modules/uuid/dist/esm-browser/index.js",
+      "file": "uuid.js",
+      "fileHash": "90bce18d",
+      "needsInterop": false
+    },
+    "axios": {
+      "src": "../../node_modules/axios/index.js",
+      "file": "axios.js",
+      "fileHash": "1d5cac4c",
       "needsInterop": false
     }
   },

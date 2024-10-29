@@ -1,4 +1,9 @@
+// src/services/api/axios.config.js
+
 import axios from 'axios'
+import router from '@/router'
+import { useAuthStore } from '@/stores/auth'
+import { ERROR_MESSAGES } from '@/utils/constants'
 
 // 創建 axios 實例
 const api = axios.create({
@@ -7,27 +12,31 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-    }
+    },
+    withCredentials: true // 允許跨域請求攜帶 cookie
 })
 
 // 請求攔截器
 api.interceptors.request.use(
     config => {
-        // 從 localStorage 獲取 token
-        const token = localStorage.getItem('token')
+        const authStore = useAuthStore()
 
         // 如果有 token 就加到 headers 中
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`
+        if (authStore.token) {
+            config.headers.Authorization = `Bearer ${authStore.token}`
         }
 
-        // 加入時間戳，防止快取
+        // 防止快取
         if (config.method === 'get') {
             config.params = {
                 ...config.params,
                 _t: Date.now()
             }
         }
+
+        // 添加自定義 headers
+        config.headers['X-Client-Version'] = import.meta.env.VITE_APP_VERSION
+        config.headers['X-Request-Id'] = generateRequestId()
 
         return config
     },
@@ -40,108 +49,224 @@ api.interceptors.request.use(
 // 響應攔截器
 api.interceptors.response.use(
     response => {
-        // 直接返回響應數據
-        return response.data
-    },
-    error => {
-        const { response } = error
+        // 處理特定的響應格式
+        const { data, code, message } = response.data
 
-        // 根據狀態碼處理不同的錯誤情況
-        if (response) {
-            switch (response.status) {
-                case 400:
-                    error.message = '請求錯誤'
-                    break
+        // 如果後端返回統一的響應格式
+        if (code !== undefined) {
+            switch (code) {
+                case 200:
+                    return data
                 case 401:
-                    // token 過期或無效
-                    error.message = '未授權，請重新登入'
-                    // 清除本地存儲的 token
-                    localStorage.removeItem('token')
-                    // 重定向到登入頁
-                    window.location.href = '/login'
-                    break
-                case 403:
-                    error.message = '拒絕訪問'
-                    break
-                case 404:
-                    error.message = '請求地址出錯'
-                    break
-                case 408:
-                    error.message = '請求超時'
-                    break
-                case 500:
-                    error.message = '伺服器內部錯誤'
-                    break
-                case 501:
-                    error.message = '服務未實現'
-                    break
-                case 502:
-                    error.message = '網關錯誤'
-                    break
-                case 503:
-                    error.message = '服務不可用'
-                    break
-                case 504:
-                    error.message = '網關超時'
-                    break
-                case 505:
-                    error.message = 'HTTP版本不受支援'
-                    break
+                    handleUnauthorized()
+                    throw new Error(message || ERROR_MESSAGES.AUTH_REQUIRED)
                 default:
-                    error.message = '發生未知錯誤'
-            }
-        } else {
-            // 處理網路錯誤
-            if (error.message.includes('timeout')) {
-                error.message = '請求超時！請檢查網路連接'
-            } else {
-                error.message = '網路連接錯誤！請檢查網路狀態'
+                    throw new Error(message || ERROR_MESSAGES.SERVER_ERROR)
             }
         }
 
-        // 顯示錯誤訊息（可以使用 toast 或其他提示元件）
-        console.error('Response error:', error.message)
+        // 如果是普通響應，直接返回數據
+        return response.data
+    },
+    error => {
+        const { response, request } = error
+
+        // 處理響應錯誤
+        if (response) {
+            switch (response.status) {
+                case 400:
+                    error.message = ERROR_MESSAGES.INVALID_REQUEST
+                    break
+                case 401:
+                    handleUnauthorized()
+                    error.message = ERROR_MESSAGES.AUTH_REQUIRED
+                    break
+                case 403:
+                    error.message = ERROR_MESSAGES.FORBIDDEN
+                    break
+                case 404:
+                    error.message = ERROR_MESSAGES.NOT_FOUND
+                    break
+                case 408:
+                    error.message = ERROR_MESSAGES.TIMEOUT
+                    break
+                case 500:
+                    error.message = ERROR_MESSAGES.SERVER_ERROR
+                    break
+                default:
+                    error.message = ERROR_MESSAGES.UNKNOWN_ERROR
+            }
+        }
+        // 處理請求錯誤
+        else if (request) {
+            if (error.message.includes('timeout')) {
+                error.message = ERROR_MESSAGES.NETWORK_TIMEOUT
+            } else {
+                error.message = ERROR_MESSAGES.NETWORK_ERROR
+            }
+        }
+        // 其他錯誤
+        else {
+            error.message = ERROR_MESSAGES.UNKNOWN_ERROR
+        }
+
+        // 記錄錯誤
+        logError(error)
 
         return Promise.reject(error)
     }
 )
 
-// 封裝請求方法
+// 處理未授權情況
+const handleUnauthorized = () => {
+    const authStore = useAuthStore()
+    authStore.logout()
+
+    // 保存當前路由
+    const currentRoute = router.currentRoute.value
+    if (currentRoute.name !== 'login') {
+        router.push({
+            name: 'login',
+            query: { redirect: currentRoute.fullPath }
+        })
+    }
+}
+
+// 生成請求 ID
+const generateRequestId = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = (Math.random() * 16) | 0
+        const v = c === 'x' ? r : (r & 0x3) | 0x8
+        return v.toString(16)
+    })
+}
+
+// 錯誤日誌
+const logError = (error) => {
+    console.error('API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        url: error.config?.url,
+        method: error.config?.method,
+        params: error.config?.params,
+        data: error.config?.data,
+        timestamp: new Date().toISOString()
+    })
+}
+
+// 請求方法封裝
 const request = {
-    get(url, params) {
-        return api.get(url, { params })
+    // GET 請求
+    async get(url, params, config = {}) {
+        try {
+            return await api.get(url, { params, ...config })
+        } catch (error) {
+            throw handleRequestError(error)
+        }
     },
 
-    post(url, data) {
-        return api.post(url, data)
+    // POST 請求
+    async post(url, data, config = {}) {
+        try {
+            return await api.post(url, data, config)
+        } catch (error) {
+            throw handleRequestError(error)
+        }
     },
 
-    put(url, data) {
-        return api.put(url, data)
+    // PUT 請求
+    async put(url, data, config = {}) {
+        try {
+            return await api.put(url, data, config)
+        } catch (error) {
+            throw handleRequestError(error)
+        }
     },
 
-    delete(url, params) {
-        return api.delete(url, { params })
+    // DELETE 請求
+    async delete(url, params, config = {}) {
+        try {
+            return await api.delete(url, { params, ...config })
+        } catch (error) {
+            throw handleRequestError(error)
+        }
     },
 
     // 上傳文件
-    upload(url, file) {
+    async upload(url, file, onProgress) {
         const formData = new FormData()
         formData.append('file', file)
-        return api.post(url, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        })
+
+        try {
+            return await api.post(url, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                },
+                onUploadProgress: progressEvent => {
+                    if (onProgress) {
+                        const progress = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total
+                        )
+                        onProgress(progress)
+                    }
+                }
+            })
+        } catch (error) {
+            throw handleRequestError(error)
+        }
     },
 
     // 下載文件
-    download(url, params) {
-        return api.get(url, {
-            params,
-            responseType: 'blob'
-        })
+    async download(url, params, filename) {
+        try {
+            const response = await api.get(url, {
+                params,
+                responseType: 'blob'
+            })
+
+            // 創建下載連結
+            const blob = new Blob([response], {
+                type: response.type || 'application/octet-stream'
+            })
+            const downloadUrl = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = downloadUrl
+            link.download = filename || getFilenameFromResponse(response)
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(downloadUrl)
+
+            return response
+        } catch (error) {
+            throw handleRequestError(error)
+        }
+    },
+
+    // 批量請求
+    async all(requests) {
+        try {
+            return await Promise.all(requests)
+        } catch (error) {
+            throw handleRequestError(error)
+        }
     }
+}
+
+// 處理請求錯誤
+const handleRequestError = (error) => {
+    // 可以在這裡添加統一的錯誤處理邏輯
+    return error
+}
+
+// 從響應中獲取文件名
+const getFilenameFromResponse = (response) => {
+    const disposition = response.headers['content-disposition']
+    if (disposition && disposition.includes('filename=')) {
+        const filename = disposition.split('filename=')[1].replace(/"/g, '')
+        return decodeURIComponent(filename)
+    }
+    return 'download'
 }
 
 export default request
