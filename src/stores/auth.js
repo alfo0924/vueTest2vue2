@@ -1,3 +1,4 @@
+// src/stores/auth.js
 import { defineStore } from 'pinia'
 import authService from '@/services/authService'
 
@@ -12,7 +13,11 @@ export const useAuthStore = defineStore('auth', {
         // 錯誤訊息
         error: null,
         // 驗證狀態
-        isAuthenticated: false
+        isAuthenticated: false,
+        // 市民卡資訊
+        citizenCard: null,
+        // 電子錢包資訊
+        wallet: null
     }),
 
     getters: {
@@ -26,13 +31,29 @@ export const useAuthStore = defineStore('auth', {
         userRole: (state) => state.user?.role || 'guest',
 
         // 取得錯誤訊息
-        getError: (state) => state.error
+        getError: (state) => state.error,
+
+        // 取得市民卡資訊
+        getCitizenCard: (state) => state.citizenCard,
+
+        // 取得電子錢包資訊
+        getWallet: (state) => state.wallet,
+
+        // 檢查是否已驗證
+        isVerified: (state) => state.user?.isVerified || false,
+
+        // 檢查是否啟用
+        isActive: (state) => state.user?.isActive || false
     },
 
     actions: {
         // 設置用戶資訊
         setUser(user) {
-            this.user = user
+            this.user = {
+                ...user,
+                registerDate: new Date(user.registerDate),
+                lastLoginTime: new Date(user.lastLoginTime)
+            }
             this.isAuthenticated = true
         },
 
@@ -47,6 +68,8 @@ export const useAuthStore = defineStore('auth', {
             this.user = null
             this.token = null
             this.isAuthenticated = false
+            this.citizenCard = null
+            this.wallet = null
             localStorage.removeItem('token')
             localStorage.removeItem('user')
         },
@@ -57,11 +80,25 @@ export const useAuthStore = defineStore('auth', {
                 this.loading = true
                 this.error = null
 
-                const response = await authService.register(userData)
+                // 驗證必填欄位
+                if (!userData.email || !userData.password) {
+                    throw new Error('電子郵件和密碼為必填欄位')
+                }
 
-                this.setToken(response.token)
-                this.setUser(response.user)
+                // 準備註冊資料
+                const registerData = {
+                    email: userData.email,
+                    password: userData.password,
+                    phone: userData.phone,
+                    role: 'normal_user',
+                    isVerified: false,
+                    isActive: true,
+                    registerDate: new Date().toISOString()
+                }
 
+                const response = await authService.register(registerData)
+
+                // 不自動登入，返回註冊結果
                 return response
             } catch (error) {
                 this.error = error.message
@@ -82,6 +119,12 @@ export const useAuthStore = defineStore('auth', {
                 this.setToken(response.token)
                 this.setUser(response.user)
 
+                // 更新最後登入時間
+                await authService.updateLastLoginTime(response.user.id)
+
+                // 獲取相關資訊
+                await this.fetchUserRelatedInfo()
+
                 return response
             } catch (error) {
                 this.error = error.message
@@ -97,8 +140,8 @@ export const useAuthStore = defineStore('auth', {
                 this.loading = true
                 this.error = null
 
-                // 如果需要呼叫後端登出 API
-                // await authService.logout()
+                // 呼叫後端登出 API
+                await authService.logout()
 
                 this.clearAuth()
             } catch (error) {
@@ -118,12 +161,30 @@ export const useAuthStore = defineStore('auth', {
                 const user = await authService.getCurrentUser()
                 this.setUser(user)
 
+                // 獲取相關資訊
+                await this.fetchUserRelatedInfo()
+
                 return user
             } catch (error) {
                 this.error = error.message
                 throw error
             } finally {
                 this.loading = false
+            }
+        },
+
+        // 獲取用戶相關資訊
+        async fetchUserRelatedInfo() {
+            try {
+                // 獲取市民卡資訊
+                const citizenCard = await authService.getCitizenCard(this.user.id)
+                this.citizenCard = citizenCard
+
+                // 獲取電子錢包資訊
+                const wallet = await authService.getWallet(this.user.id)
+                this.wallet = wallet
+            } catch (error) {
+                console.error('獲取用戶相關資訊失敗:', error)
             }
         },
 
@@ -190,11 +251,43 @@ export const useAuthStore = defineStore('auth', {
             }
         },
 
+        // 驗證電子郵件
+        async verifyEmail(token) {
+            try {
+                this.loading = true
+                this.error = null
+
+                await authService.verifyEmail(token)
+                await this.fetchUserProfile()
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
+        },
+
+        // 重新發送驗證郵件
+        async resendVerificationEmail() {
+            try {
+                this.loading = true
+                this.error = null
+
+                await authService.resendVerificationEmail(this.user.email)
+            } catch (error) {
+                this.error = error.message
+                throw error
+            } finally {
+                this.loading = false
+            }
+        },
+
         // 初始化認證狀態
         async initAuth() {
             const token = localStorage.getItem('token')
             if (token) {
                 try {
+                    this.token = token
                     await this.fetchUserProfile()
                 } catch (error) {
                     this.clearAuth()

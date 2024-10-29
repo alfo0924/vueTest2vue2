@@ -1,4 +1,18 @@
-# Logs
+# 依賴目錄
+/node_modules
+/.pnp
+.pnp.js
+
+# 編譯輸出
+/dist
+/dist-ssr
+/build
+/out
+
+# 測試覆蓋率報告
+/coverage
+
+# 日誌文件
 logs
 *.log
 npm-debug.log*
@@ -7,24 +21,95 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-.DS_Store
-dist
-dist-ssr
-coverage
-*.local
+# 環境文件
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
 
-/cypress/videos/
-/cypress/screenshots/
-
-# Editor directories and files
+# 編輯器目錄和文件
 .vscode/*
 !.vscode/extensions.json
-.idea
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.sublime-workspace
+*.sublime-project
 
+# 操作系統文件
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# 測試文件
+/cypress/videos/
+/cypress/screenshots/
+/e2e/videos/
+/e2e/screenshots/
+
+# 暫存文件
+*.tmp
+*.temp
+.cache
+.temp
 *.tsbuildinfo
+
+# 構建文件
+.nuxt
+.next
+.output
+dist-ssr
+*.local
+
+# 依賴鎖定文件（可選，視專案需求而定）
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# 自動生成的文件
+auto-imports.d.ts
+components.d.ts
+
+# 特定框架文件
+.vue-plugins
+.vuerc
+
+# 其他
+*.bak
+*.swp
+*.swo
+.history/
+.project
+.classpath
+.settings/
+.factorypath
+*.iml
+.env.development.local
+.env.test.local
+.env.production.local
+
+# PWA 文件
+**/public/precache.*.*.js
+**/public/sw.js
+**/public/workbox-*.js
+**/public/worker-*.js
+**/public/fallback-*.js
+**/public/precache.*.*.js.map
+**/public/sw.js.map
+**/public/workbox-*.js.map
+**/public/worker-*.js.map
+**/public/fallback-*.js.map
+
+# Vite 特定文件
+.vite/
+*.timestamp-*.mjs

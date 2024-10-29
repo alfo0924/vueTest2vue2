@@ -73,7 +73,7 @@
         </div>
 
         <!-- 註冊連結 -->
-        <div class="register-link">
+        <div class="text-center mt-3">
           還沒有帳號？
           <router-link to="/register">立即註冊</router-link>
         </div>

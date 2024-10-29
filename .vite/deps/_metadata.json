@@ -5,61 +5,61 @@
     "vue": {
       "src": "../../node_modules/vue/dist/vue.runtime.esm-bundler.js",
       "file": "vue.js",
-      "fileHash": "90d6d1be",
+      "fileHash": "11c15790",
       "needsInterop": false
     },
     "pinia": {
       "src": "../../node_modules/pinia/dist/pinia.mjs",
       "file": "pinia.js",
-      "fileHash": "ba416dbb",
+      "fileHash": "dda2244c",
       "needsInterop": false
     },
     "bootstrap": {
       "src": "../../node_modules/bootstrap/dist/js/bootstrap.esm.js",
       "file": "bootstrap.js",
-      "fileHash": "864cf76d",
+      "fileHash": "33fb8bbc",
       "needsInterop": false
     },
     "@fortawesome/fontawesome-svg-core": {
       "src": "../../node_modules/@fortawesome/fontawesome-svg-core/index.mjs",
       "file": "@fortawesome_fontawesome-svg-core.js",
-      "fileHash": "6f13734a",
+      "fileHash": "82266420",
       "needsInterop": false
     },
     "@fortawesome/vue-fontawesome": {
       "src": "../../node_modules/@fortawesome/vue-fontawesome/index.es.js",
       "file": "@fortawesome_vue-fontawesome.js",
-      "fileHash": "c12ce73a",
+      "fileHash": "87a89ca6",
       "needsInterop": false
     },
     "@fortawesome/free-solid-svg-icons": {
       "src": "../../node_modules/@fortawesome/free-solid-svg-icons/index.mjs",
       "file": "@fortawesome_free-solid-svg-icons.js",
-      "fileHash": "ed151e01",
+      "fileHash": "3bb4943f",
       "needsInterop": false
     },
     "@fortawesome/free-brands-svg-icons": {
       "src": "../../node_modules/@fortawesome/free-brands-svg-icons/index.mjs",
       "file": "@fortawesome_free-brands-svg-icons.js",
-      "fileHash": "36b9d0e4",
+      "fileHash": "3f9ceb0f",
       "needsInterop": false
     },
     "vue-router": {
       "src": "../../node_modules/vue-router/dist/vue-router.mjs",
       "file": "vue-router.js",
-      "fileHash": "21254286",
+      "fileHash": "16719ba5",
       "needsInterop": false
     },
     "uuid": {
       "src": "../../node_modules/uuid/dist/esm-browser/index.js",
       "file": "uuid.js",
-      "fileHash": "90bce18d",
+      "fileHash": "4e703f59",
       "needsInterop": false
     },
     "axios": {
       "src": "../../node_modules/axios/index.js",
       "file": "axios.js",
-      "fileHash": "1d5cac4c",
+      "fileHash": "a031a076",
       "needsInterop": false
     }
   },

@@ -1,424 +1,250 @@
 <template>
-  <div class="register-container">
-    <div class="register-card">
-      <h2 class="register-title">會員註冊</h2>
+  <div class="register-view">
+    <div class="register-container">
+      <h2>註冊會員</h2>
 
-      <!-- 註冊表單 -->
       <form @submit.prevent="handleRegister" class="register-form">
         <!-- Email -->
         <div class="form-group">
-          <BaseInput
+          <label for="email">電子郵件</label>
+          <input
+              id="email"
               v-model="formData.email"
               type="email"
-              label="電子郵件"
-              placeholder="請輸入電子郵件"
-              :error="errors.email"
+              class="form-control"
+              :class="{ 'is-invalid': errors.email }"
               required
-              @blur="validateEmail"
           />
+          <div class="invalid-feedback">{{ errors.email }}</div>
         </div>
 
-        <!-- 密碼 -->
+        <!-- Password -->
         <div class="form-group">
-          <BaseInput
-              v-model="formData.password"
-              type="password"
-              label="密碼"
-              placeholder="請輸入密碼"
-              :error="errors.password"
-              required
-              @blur="validatePassword"
-          />
-          <div class="password-requirements">
-            <p>密碼必須包含：</p>
-            <ul>
-              <li :class="{ valid: passwordStrength.length }">至少8個字符</li>
-              <li :class="{ valid: passwordStrength.uppercase }">至少一個大寫字母</li>
-              <li :class="{ valid: passwordStrength.lowercase }">至少一個小寫字母</li>
-              <li :class="{ valid: passwordStrength.number }">至少一個數字</li>
-              <li :class="{ valid: passwordStrength.special }">至少一個特殊字符</li>
-            </ul>
+          <label for="password">密碼</label>
+          <div class="input-group">
+            <input
+                id="password"
+                v-model="formData.password"
+                :type="showPassword ? 'text' : 'password'"
+                class="form-control"
+                :class="{ 'is-invalid': errors.password }"
+                required
+            />
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                @click="togglePassword"
+            >
+              <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+            <div class="invalid-feedback">{{ errors.password }}</div>
           </div>
         </div>
 
-        <!-- 確認密碼 -->
+        <!-- Confirm Password -->
         <div class="form-group">
-          <BaseInput
-              v-model="formData.confirmPassword"
-              type="password"
-              label="確認密碼"
-              placeholder="請再次輸入密碼"
-              :error="errors.confirmPassword"
-              required
-              @blur="validateConfirmPassword"
-          />
+          <label for="confirmPassword">確認密碼</label>
+          <div class="input-group">
+            <input
+                id="confirmPassword"
+                v-model="formData.confirmPassword"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                class="form-control"
+                :class="{ 'is-invalid': errors.confirmPassword }"
+                required
+            />
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                @click="toggleConfirmPassword"
+            >
+              <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+            <div class="invalid-feedback">{{ errors.confirmPassword }}</div>
+          </div>
         </div>
 
-        <!-- 手機號碼 -->
+        <!-- Phone -->
         <div class="form-group">
-          <BaseInput
+          <label for="phone">手機號碼</label>
+          <input
+              id="phone"
               v-model="formData.phone"
               type="tel"
-              label="手機號碼"
-              placeholder="請輸入手機號碼"
-              :error="errors.phone"
-              required
-              @blur="validatePhone"
+              class="form-control"
+              :class="{ 'is-invalid': errors.phone }"
           />
+          <div class="invalid-feedback">{{ errors.phone }}</div>
         </div>
 
-        <!-- 卡片類型選擇 -->
-        <div class="form-group">
-          <label>卡片類型</label>
-          <select
-              v-model="formData.cardType"
-              class="form-select"
-              required
-              @change="validateCardType"
-          >
-            <option value="">請選擇卡片類型</option>
-            <option value="一般卡">一般卡</option>
-            <option value="敬老卡">敬老卡</option>
-            <option value="愛心卡">愛心卡</option>
-            <option value="學生卡">學生卡</option>
-          </select>
-          <span class="error-message" v-if="errors.cardType">{{ errors.cardType }}</span>
-        </div>
-
-        <!-- 同意條款 -->
-        <div class="form-group">
-          <div class="form-check">
-            <input
-                type="checkbox"
-                v-model="formData.agreeToTerms"
-                class="form-check-input"
-                id="agreeToTerms"
-                required
-            >
-            <label class="form-check-label" for="agreeToTerms">
-              我同意
-              <a href="#" @click.prevent="showTerms">服務條款</a>
-              和
-              <a href="#" @click.prevent="showPrivacy">隱私政策</a>
-            </label>
-          </div>
-          <span class="error-message" v-if="errors.agreeToTerms">{{ errors.agreeToTerms }}</span>
-        </div>
-
-        <!-- 提交按鈕 -->
-        <BaseButton
+        <!-- Submit Button -->
+        <button
             type="submit"
-            text="註冊"
-            :loading="loading"
-            :disabled="!isFormValid || loading"
-            class="submit-btn"
-        />
+            class="btn btn-primary w-100"
+            :disabled="loading"
+        >
+          <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+          {{ loading ? '註冊中...' : '註冊' }}
+        </button>
 
-        <!-- 登入連結 -->
-        <div class="login-link">
+        <!-- Login Link -->
+        <div class="text-center mt-3">
           已有帳號？
           <router-link to="/login">立即登入</router-link>
         </div>
       </form>
     </div>
-
-    <!-- 條款 Modal -->
-    <BaseModal
-        v-model="showTermsModal"
-        title="服務條款"
-        @close="showTermsModal = false"
-    >
-      <div class="terms-content">
-        <!-- 這裡放服務條款內容 -->
-        <h3>服務條款</h3>
-        <p>歡迎使用市民卡系統...</p>
-      </div>
-    </BaseModal>
-
-    <!-- 隱私政策 Modal -->
-    <BaseModal
-        v-model="showPrivacyModal"
-        title="隱私政策"
-        @close="showPrivacyModal = false"
-    >
-      <div class="privacy-content">
-        <!-- 這裡放隱私政策內容 -->
-        <h3>隱私政策</h3>
-        <p>我們重視您的隱私...</p>
-      </div>
-    </BaseModal>
   </div>
 </template>
 
-<script>
-import { ref, computed } from 'vue'
+<script setup>
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import BaseInput from '@/components/common/BaseInput.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
-import BaseModal from '@/components/common/BaseModal.vue'
+import { validateEmail, validatePassword, validatePhone } from '@/utils/validators'
 
-export default {
-  name: 'RegisterView',
+const router = useRouter()
+const authStore = useAuthStore()
 
-  components: {
-    BaseInput,
-    BaseButton,
-    BaseModal
-  },
+const formData = reactive({
+  email: '',
+  password: '',
+  confirmPassword: '',
+  phone: ''
+})
 
-  setup() {
-    const router = useRouter()
-    const authStore = useAuthStore()
+const errors = reactive({
+  email: '',
+  password: '',
+  confirmPassword: '',
+  phone: ''
+})
 
-    const loading = ref(false)
-    const showTermsModal = ref(false)
-    const showPrivacyModal = ref(false)
+const loading = ref(false)
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
 
-    const formData = ref({
-      email: '',
-      password: '',
-      confirmPassword: '',
-      phone: '',
-      cardType: '',
-      agreeToTerms: false
+const togglePassword = () => {
+  showPassword.value = !showPassword.value
+}
+
+const toggleConfirmPassword = () => {
+  showConfirmPassword.value = !showConfirmPassword.value
+}
+
+const validateForm = () => {
+  let isValid = true
+
+  // 清除之前的錯誤
+  Object.keys(errors).forEach(key => errors[key] = '')
+
+  // Email 驗證
+  if (!validateEmail(formData.email)) {
+    errors.email = '請輸入有效的電子郵件地址'
+    isValid = false
+  }
+
+  // 密碼驗證
+  if (!validatePassword(formData.password)) {
+    errors.password = '密碼必須至少包含8個字符，包括大小寫字母和數字'
+    isValid = false
+  }
+
+  // 確認密碼驗證
+  if (formData.password !== formData.confirmPassword) {
+    errors.confirmPassword = '兩次輸入的密碼不一致'
+    isValid = false
+  }
+
+  // 手機號碼驗證
+  if (formData.phone && !validatePhone(formData.phone)) {
+    errors.phone = '請輸入有效的手機號碼'
+    isValid = false
+  }
+
+  return isValid
+}
+
+const handleRegister = async () => {
+  if (!validateForm()) return
+
+  try {
+    loading.value = true
+    await authStore.register({
+      email: formData.email,
+      password: formData.password,
+      phone: formData.phone
     })
 
-    const errors = ref({
-      email: '',
-      password: '',
-      confirmPassword: '',
-      phone: '',
-      cardType: '',
-      agreeToTerms: ''
-    })
-
-    const passwordStrength = computed(() => {
-      const password = formData.value.password
-      return {
-        length: password.length >= 8,
-        uppercase: /[A-Z]/.test(password),
-        lowercase: /[a-z]/.test(password),
-        number: /[0-9]/.test(password),
-        special: /[!@#$%^&*]/.test(password)
-      }
-    })
-
-    const isFormValid = computed(() => {
-      return !Object.values(errors.value).some(error => error) &&
-          Object.values(formData.value).every(value => value) &&
-          formData.value.agreeToTerms
-    })
-
-    // 驗證方法
-    const validateEmail = () => {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!formData.value.email) {
-        errors.value.email = '請輸入電子郵件'
-      } else if (!emailRegex.test(formData.value.email)) {
-        errors.value.email = '請輸入有效的電子郵件地址'
+    router.push('/login')
+  } catch (error) {
+    if (error.response?.data?.message) {
+      // 處理特定的錯誤訊息
+      if (error.response.data.message.includes('email')) {
+        errors.email = '此電子郵件已被註冊'
       } else {
-        errors.value.email = ''
+        errors.general = error.response.data.message
       }
+    } else {
+      errors.general = '註冊失敗，請稍後再試'
     }
-
-    const validatePassword = () => {
-      const password = formData.value.password
-      if (!password) {
-        errors.value.password = '請輸入密碼'
-      } else if (password.length < 8) {
-        errors.value.password = '密碼長度至少為8個字符'
-      } else if (!/[A-Z]/.test(password)) {
-        errors.value.password = '密碼必須包含至少一個大寫字母'
-      } else if (!/[a-z]/.test(password)) {
-        errors.value.password = '密碼必須包含至少一個小寫字母'
-      } else if (!/[0-9]/.test(password)) {
-        errors.value.password = '密碼必須包含至少一個數字'
-      } else if (!/[!@#$%^&*]/.test(password)) {
-        errors.value.password = '密碼必須包含至少一個特殊字符'
-      } else {
-        errors.value.password = ''
-      }
-    }
-
-    const validateConfirmPassword = () => {
-      if (!formData.value.confirmPassword) {
-        errors.value.confirmPassword = '請確認密碼'
-      } else if (formData.value.confirmPassword !== formData.value.password) {
-        errors.value.confirmPassword = '兩次輸入的密碼不一致'
-      } else {
-        errors.value.confirmPassword = ''
-      }
-    }
-
-    const validatePhone = () => {
-      const phoneRegex = /^09\d{8}$/
-      if (!formData.value.phone) {
-        errors.value.phone = '請輸入手機號碼'
-      } else if (!phoneRegex.test(formData.value.phone)) {
-        errors.value.phone = '請輸入有效的手機號碼'
-      } else {
-        errors.value.phone = ''
-      }
-    }
-
-    const validateCardType = () => {
-      if (!formData.value.cardType) {
-        errors.value.cardType = '請選擇卡片類型'
-      } else {
-        errors.value.cardType = ''
-      }
-    }
-
-    // 處理註冊
-    const handleRegister = async () => {
-      try {
-        loading.value = true
-        // 驗證所有欄位
-        validateEmail()
-        validatePassword()
-        validateConfirmPassword()
-        validatePhone()
-        validateCardType()
-
-        if (!isFormValid.value) {
-          return
-        }
-
-        // 調用註冊 API
-        await authStore.register({
-          email: formData.value.email,
-          password: formData.value.password,
-          phone: formData.value.phone,
-          cardType: formData.value.cardType
-        })
-
-        // 註冊成功，導向登入頁
-        router.push('/login')
-      } catch (error) {
-        console.error('Registration failed:', error)
-      } finally {
-        loading.value = false
-      }
-    }
-
-    const showTerms = () => {
-      showTermsModal.value = true
-    }
-
-    const showPrivacy = () => {
-      showPrivacyModal.value = true
-    }
-
-    return {
-      formData,
-      errors,
-      loading,
-      showTermsModal,
-      showPrivacyModal,
-      passwordStrength,
-      isFormValid,
-      handleRegister,
-      validateEmail,
-      validatePassword,
-      validateConfirmPassword,
-      validatePhone,
-      validateCardType,
-      showTerms,
-      showPrivacy
-    }
+  } finally {
+    loading.value = false
   }
 }
 </script>
 
 <style scoped>
-.register-container {
+.register-view {
   min-height: 100vh;
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: var(--spacing-lg);
+  justify-content: center;
   background-color: var(--bg-secondary);
+  padding: var(--spacing-lg);
 }
 
-.register-card {
+.register-container {
   width: 100%;
-  max-width: 500px;
-  padding: var(--spacing-xl);
+  max-width: 400px;
   background-color: var(--bg-primary);
+  padding: var(--spacing-xl);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-lg);
 }
 
-.register-title {
+.register-container h2 {
   text-align: center;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
   color: var(--text-primary);
-}
-
-.register-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
 }
 
 .form-group {
   margin-bottom: var(--spacing-md);
 }
 
-.password-requirements {
-  margin-top: var(--spacing-sm);
-  font-size: var(--font-size-sm);
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
   color: var(--text-secondary);
 }
 
-.password-requirements ul {
-  list-style: none;
-  padding-left: var(--spacing-md);
+.input-group {
+  position: relative;
 }
 
-.password-requirements li {
-  margin-top: var(--spacing-xs);
+.input-group .btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
 }
 
-.password-requirements li::before {
-  content: '✗';
-  color: var(--danger-color);
-  margin-right: var(--spacing-xs);
-}
-
-.password-requirements li.valid::before {
-  content: '✓';
-  color: var(--success-color);
-}
-
-.error-message {
+.invalid-feedback {
   color: var(--danger-color);
   font-size: var(--font-size-sm);
   margin-top: var(--spacing-xs);
 }
 
-.submit-btn {
-  margin-top: var(--spacing-md);
-}
-
-.login-link {
-  text-align: center;
-  margin-top: var(--spacing-md);
-  color: var(--text-secondary);
-}
-
-.login-link a {
-  color: var(--primary-color);
-  text-decoration: none;
-}
-
-.login-link a:hover {
-  text-decoration: underline;
-}
-
-@media (max-width: 768px) {
-  .register-card {
+@media (max-width: 576px) {
+  .register-container {
     padding: var(--spacing-md);
   }
 }
