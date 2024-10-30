@@ -1,3 +1,4 @@
+// src/main.js
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
@@ -13,6 +14,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
     // 用戶相關
     faUser, faUserCircle, faUserPlus, faSignInAlt, faSignOutAlt,
+    faIdCard, faUserShield, faUserCog, faUserEdit,
     // 表單相關
     faLock, faEnvelope, faPhone, faEye, faEyeSlash,
     // 電影相關
@@ -27,12 +29,12 @@ import {
     faEdit, faTrash, faPlus, faMinus, faCheck, faTimes,
     // 狀態相關
     faSpinner, faExclamationCircle, faCheckCircle, faInfoCircle,
-    faExclamationTriangle,
+    faExclamationTriangle, faShieldAlt, faLockOpen,
     // 導航相關
     faHome, faSearch, faList, faBars, faChevronDown, faChevronUp,
     // 其他功能
     faQrcode, faPrint, faDownload, faShare, faCog, faBell,
-    faHistory, faChair
+    faHistory, faChair, faBook, faGraduationCap, faBriefcase
 } from '@fortawesome/free-solid-svg-icons'
 
 // 引入社交媒體圖標
@@ -40,18 +42,14 @@ import {
     faFacebookF,
     faInstagram,
     faLine,
-    faYoutube
+    faYoutube,
+    faGoogle
 } from '@fortawesome/free-brands-svg-icons'
 
 // 引入全局樣式
 import '@/assets/styles/main.css'
 import '@/assets/styles/variables.css'
 import '@/assets/styles/components.css'
-
-// 引入全局工具函數
-import * as formatters from '@/utils/formatters'
-import * as validators from '@/utils/validators'
-import * as constants from '@/utils/constants'
 
 // 創建 Vue 應用實例
 const app = createApp(App)
@@ -60,6 +58,7 @@ const app = createApp(App)
 const icons = [
     // 用戶相關圖標
     faUser, faUserCircle, faUserPlus, faSignInAlt, faSignOutAlt,
+    faIdCard, faUserShield, faUserCog, faUserEdit,
     // 表單相關圖標
     faLock, faEnvelope, faPhone, faEye, faEyeSlash,
     // 電影相關圖標
@@ -74,14 +73,14 @@ const icons = [
     faEdit, faTrash, faPlus, faMinus, faCheck, faTimes,
     // 狀態相關圖標
     faSpinner, faExclamationCircle, faCheckCircle, faInfoCircle,
-    faExclamationTriangle,
+    faExclamationTriangle, faShieldAlt, faLockOpen,
     // 導航相關圖標
     faHome, faSearch, faList, faBars, faChevronDown, faChevronUp,
     // 其他功能圖標
     faQrcode, faPrint, faDownload, faShare, faCog, faBell,
-    faHistory, faChair,
+    faHistory, faChair, faBook, faGraduationCap, faBriefcase,
     // 社交媒體圖標
-    faFacebookF, faInstagram, faLine, faYoutube
+    faFacebookF, faInstagram, faLine, faYoutube, faGoogle
 ]
 
 library.add(...icons)
@@ -89,12 +88,63 @@ library.add(...icons)
 // 註冊全局組件
 app.component('font-awesome-icon', FontAwesomeIcon)
 
-// 註冊全局屬性和方法
-app.config.globalProperties.$formatters = formatters
-app.config.globalProperties.$validators = validators
-app.config.globalProperties.$constants = constants
+// 使用 Pinia
+const pinia = createPinia()
 
-// 日期格式化
+// Pinia 持久化插件
+pinia.use(({ store }) => {
+    // 從 localStorage 恢復狀態
+    const savedState = localStorage.getItem(`${store.$id}-state`)
+    if (savedState) {
+        store.$patch(JSON.parse(savedState))
+    }
+
+    // 監聽狀態變化並保存
+    store.$subscribe(
+        (mutation, state) => {
+            localStorage.setItem(`${store.$id}-state`, JSON.stringify(state))
+        },
+        { detached: true }
+    )
+})
+
+app.use(pinia)
+
+// 使用 Vue Router
+app.use(router)
+
+// 路由守衛
+router.beforeEach(async (to, from, next) => {
+    const authStore = pinia.state.value.auth
+
+    // 檢查用戶狀態
+    if (authStore?.token && !authStore?.user) {
+        try {
+            await authStore.fetchUserProfile()
+        } catch (error) {
+            console.error('Failed to fetch user profile:', error)
+        }
+    }
+
+    // 需要登入的頁面檢查
+    if (to.meta.requiresAuth && !authStore?.isLoggedIn) {
+        next({
+            name: 'login',
+            query: { redirect: to.fullPath }
+        })
+        return
+    }
+
+    // 已登入用戶不能訪問登入/註冊頁
+    if (to.meta.guest && authStore?.isLoggedIn) {
+        next({ name: 'home' })
+        return
+    }
+
+    next()
+})
+
+// 全局屬性
 app.config.globalProperties.$formatDate = (date, format = 'full') => {
     if (!date) return ''
     const options = {
@@ -118,175 +168,21 @@ app.config.globalProperties.$formatDate = (date, format = 'full') => {
     return new Date(date).toLocaleDateString('zh-TW', options[format] || options.full)
 }
 
-// 貨幣格式化
-app.config.globalProperties.$formatCurrency = (amount, options = {}) => {
-    const defaultOptions = {
+app.config.globalProperties.$formatCurrency = (amount) => {
+    return new Intl.NumberFormat('zh-TW', {
         style: 'currency',
         currency: 'TWD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-        ...options
-    }
-    return new Intl.NumberFormat('zh-TW', defaultOptions).format(amount)
+        minimumFractionDigits: 0
+    }).format(amount)
 }
-
-// 註冊全局指令
-app.directive('focus', {
-    mounted: (el) => el.focus()
-})
-
-app.directive('click-outside', {
-    mounted(el, binding) {
-        el.clickOutsideEvent = (event) => {
-            if (!(el === event.target || el.contains(event.target))) {
-                binding.value(event)
-            }
-        }
-        document.addEventListener('click', el.clickOutsideEvent)
-    },
-    unmounted(el) {
-        document.removeEventListener('click', el.clickOutsideEvent)
-    }
-})
-
-// 全局錯誤處理
-app.config.errorHandler = (err, vm, info) => {
-    console.error('Vue Error:', {
-        error: err,
-        component: vm?.$options?.name || 'Unknown',
-        info,
-        time: new Date().toISOString()
-    })
-
-    // 錯誤通知
-    if (vm?.$root?.$refs?.app?.addNotification) {
-        vm.$root.$refs.app.addNotification({
-            type: 'error',
-            title: '系統錯誤',
-            message: err.message || '發生錯誤，請稍後再試',
-            duration: 5000
-        })
-    }
-}
-
-// 使用 Pinia
-const pinia = createPinia()
-
-// Pinia 插件 - 持久化存儲
-pinia.use(({ store }) => {
-    // 從 localStorage 恢復狀態
-    const savedState = localStorage.getItem(`${store.$id}-state`)
-    if (savedState) {
-        store.$patch(JSON.parse(savedState))
-    }
-
-    // 監聽狀態變化並保存
-    store.$subscribe(
-        (mutation, state) => {
-            localStorage.setItem(`${store.$id}-state`, JSON.stringify(state))
-        },
-        { detached: true }
-    )
-})
-
-app.use(pinia)
-
-// 使用 Vue Router
-app.use(router)
-
-// 路由守衛
-router.beforeEach((to, from, next) => {
-    const authStore = pinia.state.value.auth
-
-    // 需要登入的頁面檢查
-    if (to.meta.requiresAuth && !authStore?.isLoggedIn) {
-        next({ name: 'login', query: { redirect: to.fullPath } })
-        return
-    }
-
-    // 已登入用戶不能訪問登入/註冊頁
-    if (to.meta.guest && authStore?.isLoggedIn) {
-        next({ name: 'home' })
-        return
-    }
-
-    next()
-})
 
 // 掛載應用
 app.mount('#app')
 
-// 開發環境設置
+// 開發環境配置
 if (process.env.NODE_ENV === 'development') {
     console.log('Running in development mode')
-
-    // 開發工具
-    app.config.performance = true
     app.config.devtools = true
 }
 
-// 網路狀態監控
-const handleNetworkChange = (online) => {
-    const message = online ? '網路已連線' : '網路已斷線'
-    const type = online ? 'success' : 'warning'
-
-    if (app?.$refs?.app?.addNotification) {
-        app.$refs.app.addNotification({
-            type,
-            message,
-            duration: online ? 3000 : 0
-        })
-    }
-}
-
-window.addEventListener('online', () => handleNetworkChange(true))
-window.addEventListener('offline', () => handleNetworkChange(false))
-
-// 全局錯誤處理
-window.onerror = function(msg, url, lineNo, columnNo, error) {
-    console.error('Global Error:', {
-        message: msg,
-        url,
-        lineNo,
-        columnNo,
-        error,
-        time: new Date().toISOString()
-    })
-
-    if (app?.$refs?.app?.addNotification) {
-        app.$refs.app.addNotification({
-            type: 'error',
-            title: '系統錯誤',
-            message: '系統發生錯誤，請稍後再試',
-            duration: 5000
-        })
-    }
-
-    return false
-}
-
-// Promise 錯誤處理
-window.addEventListener('unhandledrejection', event => {
-    console.error('Unhandled Promise Rejection:', {
-        reason: event.reason,
-        time: new Date().toISOString()
-    })
-
-    if (app?.$refs?.app?.addNotification) {
-        app.$refs.app.addNotification({
-            type: 'error',
-            title: '操作失敗',
-            message: '請稍後再試',
-            duration: 5000
-        })
-    }
-})
-
-// 性能監控
-if (process.env.NODE_ENV === 'production') {
-    // 監控頁面載入時間
-    window.addEventListener('load', () => {
-        const timing = performance.getEntriesByType('navigation')[0]
-        console.log('Page Load Time:', timing.loadEventEnd - timing.navigationStart)
-    })
-}
+export default app

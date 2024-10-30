@@ -12,28 +12,55 @@
         <h2>會員登入</h2>
         <form @submit.prevent="handleLogin">
           <!-- 電子郵件 -->
-          <BaseInput
-              v-model="formData.email"
-              type="email"
-              label="電子郵件"
-              placeholder="請輸入您的電子郵件"
-              :error-message="errors.email"
-              required
-              autocomplete="email"
-          />
+          <div class="form-group">
+            <label for="email">電子郵件</label>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="fas fa-envelope"></i>
+              </span>
+              <input
+                  id="email"
+                  v-model="formData.email"
+                  type="email"
+                  class="form-control"
+                  :class="{ 'is-invalid': errors.email }"
+                  placeholder="請輸入電子郵件"
+                  required
+                  autocomplete="email"
+              >
+              <div class="invalid-feedback">{{ errors.email }}</div>
+            </div>
+          </div>
 
           <!-- 密碼 -->
-          <BaseInput
-              v-model="formData.password"
-              type="password"
-              label="密碼"
-              placeholder="請輸入您的密碼"
-              :error-message="errors.password"
-              required
-              autocomplete="current-password"
-          />
+          <div class="form-group">
+            <label for="password">密碼</label>
+            <div class="input-group">
+              <span class="input-group-text">
+                <i class="fas fa-lock"></i>
+              </span>
+              <input
+                  id="password"
+                  v-model="formData.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  class="form-control"
+                  :class="{ 'is-invalid': errors.password }"
+                  placeholder="請輸入密碼"
+                  required
+                  autocomplete="current-password"
+              >
+              <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  @click="togglePassword"
+              >
+                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </button>
+              <div class="invalid-feedback">{{ errors.password }}</div>
+            </div>
+          </div>
 
-          <!-- 記住我 -->
+          <!-- 記住我和忘記密碼 -->
           <div class="form-options">
             <label class="remember-me">
               <input
@@ -42,161 +69,166 @@
               >
               <span>記住我</span>
             </label>
-            <router-link to="/forgot-password" class="forgot-password">
+            <router-link
+                :to="{ name: 'forgot-password' }"
+                class="forgot-password"
+            >
               忘記密碼？
             </router-link>
           </div>
 
           <!-- 登入按鈕 -->
-          <BaseButton
+          <button
               type="submit"
-              text="登入"
-              :loading="loading"
+              class="btn btn-primary w-100"
               :disabled="loading"
-              class="login-button"
-          />
+          >
+            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+            {{ loading ? '登入中...' : '登入' }}
+          </button>
         </form>
 
         <!-- 其他登入選項 -->
         <div class="other-options">
           <p class="divider">或</p>
           <div class="social-login">
-            <button class="social-button google" @click="handleGoogleLogin">
-              <i class="fab fa-google"></i>
+            <button
+                class="btn btn-outline-danger w-100 mb-2"
+                @click="handleGoogleLogin"
+                :disabled="loading"
+            >
+              <i class="fab fa-google me-2"></i>
               使用 Google 帳號登入
             </button>
-            <button class="social-button facebook" @click="handleFacebookLogin">
-              <i class="fab fa-facebook-f"></i>
+            <button
+                class="btn btn-outline-primary w-100"
+                @click="handleFacebookLogin"
+                :disabled="loading"
+            >
+              <i class="fab fa-facebook-f me-2"></i>
               使用 Facebook 帳號登入
             </button>
           </div>
         </div>
 
         <!-- 註冊連結 -->
-        <div class="text-center mt-3">
-          還沒有帳號？
-          <router-link to="/register">立即註冊</router-link>
+        <div class="register-link">
+          <p>還沒有帳號？</p>
+          <router-link
+              :to="{ name: 'register' }"
+              class="btn btn-outline-primary"
+          >
+            立即註冊
+          </router-link>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import BaseInput from '@/components/common/BaseInput.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
+import { validateEmail, validateRequired } from '@/utils/validators'
 
-export default {
-  name: 'LoginView',
+const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
 
-  components: {
-    BaseInput,
-    BaseButton
-  },
+// 狀態
+const loading = ref(false)
+const showPassword = ref(false)
 
-  setup() {
-    const router = useRouter()
-    const route = useRoute()
-    const authStore = useAuthStore()
-    const loading = ref(false)
+// 表單數據
+const formData = reactive({
+  email: '',
+  password: '',
+  rememberMe: false
+})
 
-    // 表單數據
-    const formData = reactive({
-      email: '',
-      password: '',
-      rememberMe: false
+// 錯誤訊息
+const errors = reactive({
+  email: '',
+  password: ''
+})
+
+// 切換密碼顯示
+const togglePassword = () => {
+  showPassword.value = !showPassword.value
+}
+
+// 表單驗證
+const validateForm = () => {
+  let isValid = true
+  errors.email = ''
+  errors.password = ''
+
+  // 驗證電子郵件
+  const emailResult = validateEmail(formData.email)
+  if (!emailResult.isValid) {
+    errors.email = emailResult.message
+    isValid = false
+  }
+
+  // 驗證密碼
+  const passwordResult = validateRequired(formData.password, '密碼')
+  if (!passwordResult.isValid) {
+    errors.password = passwordResult.message
+    isValid = false
+  }
+
+  return isValid
+}
+
+// 處理登入
+const handleLogin = async () => {
+  if (!validateForm()) return
+
+  try {
+    loading.value = true
+    await authStore.login({
+      email: formData.email,
+      password: formData.password,
+      rememberMe: formData.rememberMe
     })
 
-    // 錯誤訊息
-    const errors = reactive({
-      email: '',
-      password: ''
-    })
-
-    // 表單驗證
-    const validateForm = () => {
-      let isValid = true
-      errors.email = ''
-      errors.password = ''
-
-      if (!formData.email) {
-        errors.email = '請輸入電子郵件'
-        isValid = false
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        errors.email = '請輸入有效的電子郵件地址'
-        isValid = false
-      }
-
-      if (!formData.password) {
-        errors.password = '請輸入密碼'
-        isValid = false
-      }
-
-      return isValid
+    // 登入成功後導向
+    const redirectPath = route.query.redirect || '/'
+    router.push(redirectPath)
+  } catch (error) {
+    if (error.response?.status === 401) {
+      errors.password = '電子郵件或密碼錯誤'
+    } else {
+      errors.password = '登入失敗，請稍後再試'
     }
+  } finally {
+    loading.value = false
+  }
+}
 
-    // 處理登入
-    const handleLogin = async () => {
-      if (!validateForm()) return
+// 第三方登入
+const handleGoogleLogin = async () => {
+  try {
+    loading.value = true
+    await authStore.googleLogin()
+    router.push('/')
+  } catch (error) {
+    console.error('Google login failed:', error)
+  } finally {
+    loading.value = false
+  }
+}
 
-      try {
-        loading.value = true
-        await authStore.login({
-          email: formData.email,
-          password: formData.password,
-          rememberMe: formData.rememberMe
-        })
-
-        // 登入成功後導向
-        const redirectPath = route.query.redirect || '/'
-        router.push(redirectPath)
-      } catch (error) {
-        if (error.response?.status === 401) {
-          errors.password = '電子郵件或密碼錯誤'
-        } else {
-          errors.password = '登入失敗，請稍後再試'
-        }
-      } finally {
-        loading.value = false
-      }
-    }
-
-    // 第三方登入處理
-    const handleGoogleLogin = async () => {
-      try {
-        loading.value = true
-        await authStore.googleLogin()
-        router.push('/')
-      } catch (error) {
-        console.error('Google login failed:', error)
-      } finally {
-        loading.value = false
-      }
-    }
-
-    const handleFacebookLogin = async () => {
-      try {
-        loading.value = true
-        await authStore.facebookLogin()
-        router.push('/')
-      } catch (error) {
-        console.error('Facebook login failed:', error)
-      } finally {
-        loading.value = false
-      }
-    }
-
-    return {
-      formData,
-      errors,
-      loading,
-      handleLogin,
-      handleGoogleLogin,
-      handleFacebookLogin
-    }
+const handleFacebookLogin = async () => {
+  try {
+    loading.value = true
+    await authStore.facebookLogin()
+    router.push('/')
+  } catch (error) {
+    console.error('Facebook login failed:', error)
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -229,6 +261,7 @@ export default {
 
 .logo {
   width: 120px;
+  height: auto;
   margin-bottom: var(--spacing-md);
 }
 
@@ -236,10 +269,8 @@ export default {
   padding: var(--spacing-lg);
 }
 
-.login-form h2 {
-  text-align: center;
-  margin-bottom: var(--spacing-lg);
-  color: var(--text-primary);
+.form-group {
+  margin-bottom: var(--spacing-md);
 }
 
 .form-options {
@@ -259,17 +290,17 @@ export default {
 .forgot-password {
   color: var(--primary-color);
   text-decoration: none;
+  font-size: var(--font-size-sm);
 }
 
-.login-button {
-  width: 100%;
-  margin-bottom: var(--spacing-lg);
+.forgot-password:hover {
+  text-decoration: underline;
 }
 
 .divider {
   text-align: center;
   position: relative;
-  margin: var(--spacing-md) 0;
+  margin: var(--spacing-lg) 0;
   color: var(--text-secondary);
 }
 
@@ -283,68 +314,30 @@ export default {
   background-color: var(--border-color);
 }
 
-.divider::before {
-  left: 0;
-}
-
-.divider::after {
-  right: 0;
-}
+.divider::before { left: 0; }
+.divider::after { right: 0; }
 
 .social-login {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.social-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm);
-  border: none;
-  border-radius: var(--border-radius-md);
-  cursor: pointer;
-  transition: opacity var(--transition-fast);
-}
-
-.social-button:hover {
-  opacity: 0.9;
-}
-
-.social-button.google {
-  background-color: #DB4437;
-  color: white;
-}
-
-.social-button.facebook {
-  background-color: #4267B2;
-  color: white;
+  margin-bottom: var(--spacing-lg);
 }
 
 .register-link {
   text-align: center;
   margin-top: var(--spacing-lg);
-  color: var(--text-secondary);
 }
 
-.register-link a {
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: var(--font-weight-medium);
+.register-link p {
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-secondary);
 }
 
 @media (max-width: 480px) {
   .login-container {
     box-shadow: none;
-    background-color: transparent;
   }
 
   .login-form {
-    background-color: var(--bg-primary);
-    border-radius: var(--border-radius-lg);
-    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
   }
 }
 </style>

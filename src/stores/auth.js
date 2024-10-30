@@ -23,25 +23,18 @@ export const useAuthStore = defineStore('auth', {
     getters: {
         // 取得用戶資訊
         currentUser: (state) => state.user,
-
         // 檢查是否已登入
         isLoggedIn: (state) => state.isAuthenticated,
-
         // 取得用戶角色
         userRole: (state) => state.user?.role || 'guest',
-
         // 取得錯誤訊息
         getError: (state) => state.error,
-
         // 取得市民卡資訊
         getCitizenCard: (state) => state.citizenCard,
-
         // 取得電子錢包資訊
         getWallet: (state) => state.wallet,
-
         // 檢查是否已驗證
         isVerified: (state) => state.user?.isVerified || false,
-
         // 檢查是否啟用
         isActive: (state) => state.user?.isActive || false
     },
@@ -97,8 +90,6 @@ export const useAuthStore = defineStore('auth', {
                 }
 
                 const response = await authService.register(registerData)
-
-                // 不自動登入，返回註冊結果
                 return response
             } catch (error) {
                 this.error = error.message
@@ -113,18 +104,13 @@ export const useAuthStore = defineStore('auth', {
             try {
                 this.loading = true
                 this.error = null
-
                 const response = await authService.login(credentials)
-
                 this.setToken(response.token)
                 this.setUser(response.user)
-
                 // 更新最後登入時間
                 await authService.updateLastLoginTime(response.user.id)
-
                 // 獲取相關資訊
                 await this.fetchUserRelatedInfo()
-
                 return response
             } catch (error) {
                 this.error = error.message
@@ -139,10 +125,7 @@ export const useAuthStore = defineStore('auth', {
             try {
                 this.loading = true
                 this.error = null
-
-                // 呼叫後端登出 API
                 await authService.logout()
-
                 this.clearAuth()
             } catch (error) {
                 this.error = error.message
@@ -157,13 +140,9 @@ export const useAuthStore = defineStore('auth', {
             try {
                 this.loading = true
                 this.error = null
-
                 const user = await authService.getCurrentUser()
                 this.setUser(user)
-
-                // 獲取相關資訊
                 await this.fetchUserRelatedInfo()
-
                 return user
             } catch (error) {
                 this.error = error.message
@@ -179,7 +158,6 @@ export const useAuthStore = defineStore('auth', {
                 // 獲取市民卡資訊
                 const citizenCard = await authService.getCitizenCard(this.user.id)
                 this.citizenCard = citizenCard
-
                 // 獲取電子錢包資訊
                 const wallet = await authService.getWallet(this.user.id)
                 this.wallet = wallet
@@ -193,10 +171,8 @@ export const useAuthStore = defineStore('auth', {
             try {
                 this.loading = true
                 this.error = null
-
                 const updatedUser = await authService.updateUserProfile(userData)
                 this.setUser(updatedUser)
-
                 return updatedUser
             } catch (error) {
                 this.error = error.message
@@ -211,7 +187,6 @@ export const useAuthStore = defineStore('auth', {
             try {
                 this.loading = true
                 this.error = null
-
                 await authService.changePassword(passwordData)
             } catch (error) {
                 this.error = error.message
@@ -226,7 +201,6 @@ export const useAuthStore = defineStore('auth', {
             try {
                 this.loading = true
                 this.error = null
-
                 await authService.requestPasswordReset(email)
             } catch (error) {
                 this.error = error.message
@@ -241,7 +215,6 @@ export const useAuthStore = defineStore('auth', {
             try {
                 this.loading = true
                 this.error = null
-
                 await authService.resetPassword(resetData)
             } catch (error) {
                 this.error = error.message
@@ -256,7 +229,6 @@ export const useAuthStore = defineStore('auth', {
             try {
                 this.loading = true
                 this.error = null
-
                 await authService.verifyEmail(token)
                 await this.fetchUserProfile()
             } catch (error) {
@@ -272,7 +244,6 @@ export const useAuthStore = defineStore('auth', {
             try {
                 this.loading = true
                 this.error = null
-
                 await authService.resendVerificationEmail(this.user.email)
             } catch (error) {
                 this.error = error.message
